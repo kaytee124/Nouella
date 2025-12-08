@@ -10,7 +10,7 @@ Superadmin.init({
         primaryKey: true,
         autoIncrement: true
     },
-    emailName: {
+    Name: {
         type: DataTypes.STRING(255),
         allowNull: false
     },

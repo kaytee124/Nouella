@@ -1,61 +1,130 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const ussdRouter = require("./routes/ussd");
-const paymentService = require("./services/PaymentService");
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+require('dotenv').config();
 
+// Import middleware and routes
+const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const routes = require('./routes');
+const sequelize = require('./config/db');
+
+// Initialize Express app
 const app = express();
-
-// Middleware for parsing request bodies
-app.use(bodyParser.urlencoded({ extended: true })); // Handle URL-encoded bodies
-app.use(bodyParser.json({ strict: false })); // Handle JSON bodies
-app.use(express.json()); // Middleware to parse JSON requests
-
-// Route definitions
-app.use("/ussd", ussdRouter); // USSD routes (GMM flow)
-
-// In-memory cache for deduplication
-const processedTransactions = {};
-
-// Time window for deduplication (1 minute in milliseconds)
-const TIME_WINDOW = 60000;
-
-// Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, async () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`USSD endpoint: http://localhost:${PORT}/ussd`);
-  
-  // Background status poller for safety when callback delays
-  // Note: PaymentService already has a cron job that runs every 5 minutes
-  // This is an additional safety check
-  setInterval(async () => {
-    try {
-      await paymentService.get_status();
-    } catch (e) {
-      console.error("Polling error:", e);
-    }
-  }, 60000); // Check every minute
+
+
+// Security middleware
+app.use(helmet());
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+// CORS configuration
+// app.use(cors({
+//   origin: process.env.NODE_ENV === 'production' 
+//     ? ['https://yourdomain.com'] 
+//     : ['http://localhost:3000', 'http://localhost:3001'],
+//   credentials: true
+// }));
+
+app.use(cors({
+  origin: '*'
+}));
+
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
+  message: {
+    error: true,
+    message: 'Too many requests from this IP, please try again later.'
+  }
+});
+app.use('/api', limiter);
+
+// Body parsing middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Logging middleware (simple console logging for development)
+if (process.env.NODE_ENV === 'development') {
+  app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
+  });
+}
+
+// Routes
+app.use('/api', routes);
+
+// Health check endpoint (outside of rate limiting)
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'Server is running',
+    timestamp: new Date().toISOString()
+  });
 });
 
+// 404 handler
+app.use(notFoundHandler);
 
-// const express = require("express");
-// const bodyParser = require("body-parser");
-// const ussdRouter = require("./routes/ussd");
-// const paymentProcessorRouter = require("./routes/paymentProcessor");
+// Global error handler
+app.use(errorHandler);
 
-// const app = express();
+// Database connection and server startup
+const startServer = async () => {
+  try {
+    // Test database connection
+    await sequelize.authenticate();
+    console.log('✅ Database connection established successfully.');
 
-// // Middleware for parsing request bodies
-// app.use(bodyParser.urlencoded({ extended: true })); // Handle URL-encoded bodies
-// app.use(bodyParser.json({ strict: false })); // Handle JSON bodies
+    // Sync database (in development only)
+    if (process.env.NODE_ENV === 'development') {
+      await sequelize.sync({ alter: false }); // Set to true to alter tables
+      console.log('✅ Database synchronized.');
+    }
 
-// // Route definitions
-// app.use("/ussd", ussdRouter); // USSD routes
-// app.use("/paymentProcessor", paymentProcessorRouter); // Payment processor routes
+    // Start server
+    app.listen(PORT, () => {
+      console.log(`🚀 Server is running on port ${PORT}`);
+      console.log(`📊 Health check: http://localhost:${PORT}/health`);
+      console.log(`📖 API docs: http://localhost:${PORT}/api`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+  } catch (error) {
+    console.error('❌ Unable to start server:', error);
+    process.exit(1);
+  }
+};
 
-// // Start server
-// const PORT = process.env.PORT || 3000;
-// app.listen(PORT, () => {
-//   console.log(`Server running on port ${PORT}`);
-// });
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Promise Rejection:', err);
+  process.exit(1);
+});
 
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  process.exit(1);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received. Shutting down gracefully...');
+  await sequelize.close();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT received. Shutting down gracefully...');
+  await sequelize.close();
+  process.exit(0);
+});
+
+// Start the server
+startServer();
+
+module.exports = app;

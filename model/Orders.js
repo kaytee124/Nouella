@@ -29,7 +29,12 @@ Orders.init({
     },
     address: {
         type: DataTypes.STRING(500),
-        allowNull: false
+        allowNull: true
+    },
+    ordertotal: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0
     }
 }, {
     sequelize,

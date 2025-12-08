@@ -33,10 +33,6 @@ Order_Items.init({
     price: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false
-    },
-    ordertotal: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false
     }
 }, {
     sequelize,

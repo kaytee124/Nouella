@@ -36,10 +36,10 @@ const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
 const sequelize = new Sequelize({
-  database: process.env.DB_NAME || 'GOSA',
-  username: process.env.DB_USER || 'EPDev',
-  password: process.env.DB_PASSWORD || 'Mothermother111666',
-  host: process.env.DB_HOST ||  'instantussd.coonohzoplm6.us-west-1.rds.amazonaws.com',
+  database: process.env.DB_NAME || 'nouella',
+  username: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || 'Vicky@2017',
+  host: process.env.DB_HOST ||  'localhost',
   port: parseInt(process.env.DB_PORT || '3306'),
   dialect: 'mysql',
   logging: process.env.NODE_ENV === 'development' ? console.log : false,

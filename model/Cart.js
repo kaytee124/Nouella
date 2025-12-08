@@ -26,6 +26,11 @@ Cart.init({
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: DataTypes.NOW
+    },
+    status: {
+        type: DataTypes.ENUM('Active', 'Processed', 'Canceled'),
+        allowNull: false,
+        defaultValue: 'Active'
     }
 }, {
     sequelize,
