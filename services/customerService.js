@@ -740,7 +740,7 @@ class CustomerService {
                   {
                     model: Product,
                     as: 'product',
-                    attributes: ['productid', 'ProductName', 'ProductPhoto'],
+                    attributes: ['productid', 'ProductName', 'ProductPhoto', 'catid', 'category_id'],
                     required: false
                   }
                 ]
@@ -894,7 +894,7 @@ class CustomerService {
         currency: 'GHS',
         amount,
         order_id: transactionId,
-        order_description: `Payment for ${quantity} items`,
+        order_description: `Payment for ${totalQuantity} items`,
       };
 
       console.log('📦 Payment data prepared:', payment_data);
@@ -1229,7 +1229,7 @@ class CustomerService {
           {
             model: Product,
             as: 'products',
-            attributes: ['productid', 'ProductName', 'ProductPhoto', 'Price', 'Stock'],
+            attributes: ['productid', 'ProductName', 'ProductPhoto', 'Price', 'Stock', 'catid', 'category_id'],
             required: false
           }
         ],
@@ -1265,7 +1265,8 @@ class CustomerService {
           'ProductPhoto',
           'Price',
           'Stock',
-          'catid'
+          'catid',
+          'category_id'
         ],
         where: { catid: categoryId },
         include: [
@@ -1289,6 +1290,7 @@ class CustomerService {
           Price: plain.Price,
           Stock: plain.Stock,
           catid: plain.catid,
+          category_id: plain.category_id,
           categoryName: plain.category?.catName || null
         };
       });
@@ -1300,78 +1302,38 @@ class CustomerService {
     }
   }
 
-  // Change customer password
-  async change_password(customerId, oldPassword, newPassword) {
+  // Edit customer
+  async editCustomer(customerId, Name, Email) {
     try {
       const customer = await Customers.findByPk(customerId);
       if (!customer) {
         return {
           success: false,
-          message: 'Customer not found.'
-        };
-      }
-
-      if (oldPassword === newPassword) {
-        return {
-          success: false,
-          message: 'Old password and new password cannot be the same.'
-        };
-      }
-
-      const { comparePassword } = require('../middleware/auth');
-      const isValidPassword = await comparePassword(oldPassword, customer.Password);
-      if (!isValidPassword) {
-        return {
-          success: false,
-          message: 'Incorrect old password.'
-        };
-      }
-
-      customer.Password = newPassword;
-      await customer.save();
-
-      return {
-        success: true,
-        message: 'Password changed successfully.'
-      };
-    } catch (error) {
-      console.error('❌ Error in change_password service:', error);
-      throw new Error('Failed to change password: ' + error.message);
-    }
-  }
-
-  // Edit customer profile
-  async edit_customer(customerId, name, email) {
-    try {
-      const customer = await Customers.findByPk(customerId);
-      if (!customer) {
-        return {
-          success: false,
-          message: 'Customer not found.'
+          message: 'Customer not found.',
         };
       }
 
       // Check if email is already taken by another customer
-      if (email && email !== customer.Email) {
+      if (Email && Email !== customer.Email) {
         const existingCustomer = await Customers.findOne({
-          where: { Email: email }
+          where: { Email: Email }
         });
         if (existingCustomer) {
           return {
             success: false,
-            message: 'Email already in use by another customer.'
+            message: 'Email already in use by another customer.',
           };
         }
       }
 
-      if (name) customer.Name = name;
-      if (email) customer.Email = email;
+      if (Name) customer.Name = Name;
+      if (Email) customer.Email = Email;
 
       await customer.save();
 
       return {
         success: true,
-        message: 'Customer profile updated successfully.',
+        message: 'Customer updated successfully.',
         data: {
           id: customer.id,
           Name: customer.Name,
@@ -1379,8 +1341,43 @@ class CustomerService {
         }
       };
     } catch (error) {
-      console.error('❌ Error in edit_customer service:', error);
-      throw new Error('Failed to update customer profile: ' + error.message);
+      console.error('❌ Error in editCustomer service:', error);
+      throw new Error('Failed to edit customer');
+    }
+  }
+
+  // Change customer password
+  async changeCustomerPassword(customerId, oldPassword, newPassword) {
+    try {
+      const { comparePassword, hashPassword } = require('../middleware/auth');
+      const customer = await Customers.findByPk(customerId);
+      if (!customer) {
+        return {
+          success: false,
+          message: 'Customer not found.',
+        };
+      }
+
+      // Verify old password
+      const isValidPassword = await comparePassword(oldPassword, customer.Password);
+      if (!isValidPassword) {
+        return {
+          success: false,
+          message: 'Incorrect old password.',
+        };
+      }
+
+      // Update password (will be hashed by model hook)
+      customer.Password = newPassword;
+      await customer.save();
+
+      return {
+        success: true,
+        message: 'Password changed successfully.',
+      };
+    } catch (error) {
+      console.error('❌ Error in changeCustomerPassword service:', error);
+      throw new Error('Failed to change password');
     }
   }
 }

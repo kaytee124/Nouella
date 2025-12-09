@@ -3,15 +3,24 @@ const router = express.Router();
 const customerController = require('../controllers/customerController');
 const { authenticateUser } = require('../middleware/auth');
 
-// Public routes
-router.get('/all_categories', customerController.all_categories);
-router.post('/all_products', customerController.all_products);
-router.post('/checkout', customerController.checkout);
-router.post('/check-payment-status', customerController.checkPaymentStatus);
+// Cart routes (protected)
+router.post('/cart/add', authenticateUser, customerController.addToCart);
+router.post('/cart/checkout', authenticateUser, customerController.checkout);
+router.post('/cart/update-quantity', authenticateUser, customerController.updateCartQuantity);
+router.post('/cart/increase-quantity', authenticateUser, customerController.increaseQuantity);
+router.post('/cart/decrease-quantity', authenticateUser, customerController.decreaseQuantity);
 
-// Authenticated routes
-router.post('/get-payment-history', authenticateUser, customerController.getPaymentHistory);
-router.post('/change-password', authenticateUser, customerController.change_password);
-router.post('/edit-profile', authenticateUser, customerController.edit_customer);
+// Product routes (public for browsing, protected for purchase)
+router.get('/categories', customerController.getAllCategories);
+router.post('/products', customerController.getAllProducts);
+
+// Payment routes (protected)
+router.post('/payment/process', authenticateUser, customerController.processMMPayment);
+router.post('/payment/check-status', authenticateUser, customerController.checkPaymentStatus);
+router.get('/payment/history', authenticateUser, customerController.getPaymentHistory);
+
+// Customer management (protected)
+router.post('/edit', authenticateUser, customerController.editCustomer);
+router.post('/change-password', authenticateUser, customerController.changePassword);
 
 module.exports = router;

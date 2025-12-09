@@ -67,11 +67,18 @@ CREATE TABLE IF NOT EXISTS Product (
     catid INT NOT NULL,
     Price INT NOT NULL,
     Stock INT NOT NULL DEFAULT 0,
+    category_id INT NOT NULL,
     INDEX idx_catid (catid),
+    INDEX idx_category_id (category_id),
     INDEX idx_productname (ProductName),
     INDEX idx_price (Price),
     CONSTRAINT fk_product_catid 
         FOREIGN KEY (catid) 
+        REFERENCES Categories(catid) 
+        ON DELETE CASCADE 
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_product_category_id 
+        FOREIGN KEY (category_id) 
         REFERENCES Categories(catid) 
         ON DELETE CASCADE 
         ON UPDATE CASCADE

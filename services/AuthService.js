@@ -1,5 +1,5 @@
 // xaiartifacts/AuthService.js
-const { Contest_Manager, Superadmin } = require('../model');
+const { Customers, Superadmin } = require('../model');
 const { comparePassword, generateToken, hashPassword } = require('../middleware/auth');
 
 class AuthService {
@@ -81,6 +81,17 @@ class AuthService {
 
   async registerCustomer(Name, Email, Password) {
     try {
+      // Check if customer already exists
+      const existingCustomer = await Customers.findOne({
+        where: { Email: Email }
+      });
+      if (existingCustomer) {
+        return {
+          error: true,
+          message: 'Customer already registered with this email.',
+        };
+      }
+
       const customer = await Customers.create({
         Name, Email, Password
       });
@@ -99,8 +110,20 @@ class AuthService {
       throw new Error('Failed to register customer' + error);
     }
   }
+
   async registerSuperAdmin(Name, Email, Password) {
     try {
+      // Check if super admin already exists
+      const existingAdmin = await Superadmin.findOne({
+        where: { Email: Email }
+      });
+      if (existingAdmin) {
+        return {
+          error: true,
+          message: 'Super admin already registered with this email.',
+        };
+      }
+
       const superAdmin = await Superadmin.create({
         Name, Email, Password
       });
@@ -118,6 +141,70 @@ class AuthService {
     catch (error) {
       console.error('Error in registerSuperAdmin service:', error);
       throw new Error('Failed to register super admin' + error);
+    }
+  }
+
+  // Change customer password
+  async changeCustomerPassword(customerId, oldPassword, newPassword) {
+    try {
+      const customer = await Customers.findByPk(customerId);
+      if (!customer) {
+        return {
+          error: true,
+          message: 'Customer not found.',
+        };
+      }
+
+      const isValidPassword = await comparePassword(oldPassword, customer.Password);
+      if (!isValidPassword) {
+        return {
+          error: true,
+          message: 'Incorrect old password.',
+        };
+      }
+
+      customer.Password = newPassword;
+      await customer.save();
+
+      return {
+        success: true,
+        message: 'Password changed successfully.',
+      };
+    } catch (error) {
+      console.error('Error in changeCustomerPassword service:', error);
+      throw new Error('Failed to change customer password');
+    }
+  }
+
+  // Change superadmin password
+  async changeSuperAdminPassword(adminId, oldPassword, newPassword) {
+    try {
+      const admin = await Superadmin.findByPk(adminId);
+      if (!admin) {
+        return {
+          error: true,
+          message: 'Super admin not found.',
+        };
+      }
+
+      const isValidPassword = await comparePassword(oldPassword, admin.Password);
+      if (!isValidPassword) {
+        return {
+          error: true,
+          message: 'Incorrect old password.',
+        };
+      }
+
+      admin.Password = newPassword;
+      await admin.save();
+
+      return {
+        success: true,
+        message: 'Password changed successfully.',
+      };
+    } catch (error) {
+      console.error('Error in changeSuperAdminPassword service:', error);
+      throw new Error('Failed to change super admin password');
     }
   }
 }

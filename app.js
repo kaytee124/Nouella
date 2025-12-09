@@ -55,6 +55,9 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
+// Serve static files (uploaded images)
+app.use('/uploads', express.static('uploads'));
+
 // Routes
 app.use('/api', routes);
 

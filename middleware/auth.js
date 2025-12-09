@@ -50,7 +50,7 @@ const requireManager = (req, res, next) => {
 
 // Middleware to check if user is super admin
 const requireSuperAdmin = (req, res, next) => {
-  if (req.user.role !== 'super_admin') {
+  if (req.user.role !== 'superadmin') {
     return res.status(403).json({ error: true, message: 'Super admin access required' });
   }
   next();

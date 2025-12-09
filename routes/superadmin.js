@@ -1,26 +1,29 @@
 const express = require('express');
 const router = express.Router();
 const superadminController = require('../controllers/superadminController');
-const {authenticateUser, requireSuperAdmin} = require('../middleware/auth');
+const { authenticateUser, requireSuperAdmin } = require('../middleware/auth');
 
-// Public routes
-router.post('/register', superadminController.registerSuperAdmin);
-
-// Authenticated superadmin routes
-router.post('/add-product', authenticateUser, requireSuperAdmin, superadminController.add_product);
-router.post('/update-product', authenticateUser, requireSuperAdmin, superadminController.update_product);
-router.post('/create-category', authenticateUser, requireSuperAdmin, superadminController.create_category);
-router.post('/update-category', authenticateUser, requireSuperAdmin, superadminController.update_category);
-router.post('/update-order-status', authenticateUser, requireSuperAdmin, superadminController.update_order_status);
-router.post('/change-password', authenticateUser, requireSuperAdmin, superadminController.change_password);
-router.post('/edit-profile', authenticateUser, requireSuperAdmin, superadminController.edit_superadmin);
-
-// Legacy routes (keeping for backward compatibility, can be removed later)
-router.post('/manager_status', authenticateUser, requireSuperAdmin, superadminController.manager_status);
-router.post('/add_manager', authenticateUser, requireSuperAdmin, superadminController.add_manager);
-router.post('/update_manager', authenticateUser, requireSuperAdmin, superadminController.update_manager);
-router.get('/all_managers', authenticateUser, requireSuperAdmin, superadminController.all_managers);
+// Dashboard (protected)
 router.get('/dashboard', authenticateUser, requireSuperAdmin, superadminController.getDashboard);
-router.get('/contest-report', authenticateUser, requireSuperAdmin, superadminController.getContestReport);
+
+// Category management (protected)
+router.post('/category/create', authenticateUser, requireSuperAdmin, superadminController.createCategory);
+router.put('/category/update/:catid', authenticateUser, requireSuperAdmin, superadminController.updateCategory);
+router.delete('/category/delete/:catid', authenticateUser, requireSuperAdmin, superadminController.deleteCategory);
+router.get('/category/all', authenticateUser, requireSuperAdmin, superadminController.getAllCategories);
+
+// Product management (protected)
+const { uploadProductImage, handleUploadError } = require('../middleware/upload');
+router.post('/product/add', authenticateUser, requireSuperAdmin, uploadProductImage, handleUploadError, superadminController.addProduct);
+router.put('/product/update/:productid', authenticateUser, requireSuperAdmin, uploadProductImage, handleUploadError, superadminController.updateProduct);
+router.delete('/product/delete/:productid', authenticateUser, requireSuperAdmin, superadminController.deleteProduct);
+router.get('/product/all', authenticateUser, requireSuperAdmin, superadminController.getAllProducts);
+
+// Order management (protected)
+router.put('/order/update-status/:orderid', authenticateUser, requireSuperAdmin, superadminController.updateOrderStatus);
+router.get('/order/all', authenticateUser, requireSuperAdmin, superadminController.getAllOrders);
+
+// Superadmin management (protected)
+router.post('/edit', authenticateUser, requireSuperAdmin, superadminController.editSuperAdmin);
 
 module.exports = router;

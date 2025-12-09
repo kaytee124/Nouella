@@ -7,4 +7,5 @@ const userRouter = require('./user');
 router.use('/superadmin', superadminRouter);
 router.use('/auth', authRouter);
 router.use('/user', userRouter);
+
 module.exports = router;
