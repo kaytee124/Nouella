@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS Orders (
     customerid INT NOT NULL,
     dateadded DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     status ENUM('Pending', 'paid', 'Delivered') NOT NULL DEFAULT 'Pending',
-    address VARCHAR(500) NOT NULL,
+    address VARCHAR(500) NULL,
 	ordertotal DECIMAL(10, 2) NOT NULL,
     INDEX idx_customerid (customerid),
     INDEX idx_status (status),

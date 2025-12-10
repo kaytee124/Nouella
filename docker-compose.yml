@@ -1,0 +1,46 @@
+# /var/www/nouella/docker-compose.yml
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nouella-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # Use special Docker hostname to access host services
+      - DB_HOST=host.docker.internal
+      - DB_PORT=3306
+      - DB_NAME=nouella
+      - DB_USER=nouella_user
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ./uploads:/app/uploads
+    extra_hosts:
+      # This allows container to access host services
+      - "host.docker.internal:host-gateway"
+    networks:
+      - nouella-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+    # Memory limits for 2GB server
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+        reservations:
+          memory: 512M
+
+networks:
+  nouella-network:
+    driver: bridge
