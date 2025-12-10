@@ -23,7 +23,7 @@ use nouella;
 -- =============================================
 CREATE TABLE IF NOT EXISTS Superadmin (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    emailName VARCHAR(255) NOT NULL,
+    Name VARCHAR(255) NOT NULL,
     Email VARCHAR(255) NOT NULL,
     Password VARCHAR(255) NOT NULL,
     INDEX idx_email (Email)
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS Superadmin (
 -- =============================================
 CREATE TABLE IF NOT EXISTS Customers (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    emailName VARCHAR(255) NOT NULL,
+    Name VARCHAR(255) NOT NULL,
     Email VARCHAR(255) NOT NULL,
     Password VARCHAR(255) NOT NULL,
     INDEX idx_email (Email)
@@ -83,9 +83,9 @@ CREATE TABLE IF NOT EXISTS Product (
 CREATE TABLE IF NOT EXISTS Cart (
     id INT AUTO_INCREMENT PRIMARY KEY,
     customerid INT NOT NULL,
-    carttotal INT NOT NULL DEFAULT 0,
+    carttotal DECIMAL(10, 2) NOT NULL DEFAULT 0,
     dateadded DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	status ENUM('Active', 'Processed', 'Canceled') NOT NULL DEFAULT 'Active',
+    status ENUM('Active', 'Processed', 'Canceled') NOT NULL DEFAULT 'Active',
     INDEX idx_customerid (customerid),
     INDEX idx_dateadded (dateadded),
     CONSTRAINT fk_cart_customerid 
