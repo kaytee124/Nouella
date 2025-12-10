@@ -42,6 +42,5 @@ Orders.init({
     tableName: 'Orders',
     timestamps: false
 });
-
 module.exports = Orders;
 
