@@ -136,8 +136,6 @@ class CustomerService {
       return { 
         success: true, 
         message: 'Item added to cart successfully',
-        cartId: cart.id,
-        cartTotal: cart.carttotal
       };
     } catch (error) {
       console.error('❌ Error adding to cart:', error);
@@ -740,7 +738,7 @@ class CustomerService {
                   {
                     model: Product,
                     as: 'product',
-                    attributes: ['productid', 'ProductName', 'ProductPhoto', 'catid', 'category_id'],
+                    attributes: ['productid', 'ProductName', 'ProductPhoto'],
                     required: false
                   }
                 ]
@@ -894,7 +892,7 @@ class CustomerService {
         currency: 'GHS',
         amount,
         order_id: transactionId,
-        order_description: `Payment for ${totalQuantity} items`,
+        order_description: `Payment for ${quantity} items`,
       };
 
       console.log('📦 Payment data prepared:', payment_data);
@@ -1224,15 +1222,7 @@ class CustomerService {
   async all_categories() {
     try {
       const categories = await Categories.findAll({
-        attributes: ['catid', 'catName', 'Description', 'adminid'],
-        include: [
-          {
-            model: Product,
-            as: 'products',
-            attributes: ['productid', 'ProductName', 'ProductPhoto', 'Price', 'Stock', 'catid', 'category_id'],
-            required: false
-          }
-        ],
+        attributes: ['catid', 'catName', 'Description'],
         order: [['catName', 'ASC']]
       });
       
@@ -1242,8 +1232,6 @@ class CustomerService {
           catid: plain.catid,
           catName: plain.catName,
           Description: plain.Description,
-          adminid: plain.adminid,
-          products: plain.products || []
         };
       });
       
@@ -1265,18 +1253,9 @@ class CustomerService {
           'ProductPhoto',
           'Price',
           'Stock',
-          'catid',
-          'category_id'
+          'catid'
         ],
         where: { catid: categoryId },
-        include: [
-          {
-            model: Categories,
-            as: 'category',
-            attributes: ['catid', 'catName'],
-            required: false
-          }
-        ],
         order: [['ProductName', 'ASC']]
       });
       
@@ -1289,14 +1268,36 @@ class CustomerService {
           ProductPhoto: plain.ProductPhoto,
           Price: plain.Price,
           Stock: plain.Stock,
-          catid: plain.catid,
-          category_id: plain.category_id,
-          categoryName: plain.category?.catName || null
         };
       });
       
       return productsData;
     } catch (error) {
+      console.error('❌ Error fetching all products:', error);
+      throw new Error('Failed to fetch all products: ' + error.message);
+    }
+  }
+
+  async get_all_products() {
+    try {
+      const products = await Product.findAll({
+        attributes: ['productid', 'ProductName', 'Description', 'ProductPhoto', 'Price', 'Stock'],
+        order: [['ProductName', 'ASC']]
+      });
+      if (products.length === 0) {
+        return {
+          success: true,
+          message: 'No products found.',
+        };
+      }
+      else {
+        return {
+          success: true,
+          data: products
+        };
+      }
+    }
+    catch (error) {
       console.error('❌ Error fetching all products:', error);
       throw new Error('Failed to fetch all products: ' + error.message);
     }

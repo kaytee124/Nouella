@@ -176,13 +176,13 @@ class CustomerController {
 
   async getAllProducts(req, res) {
     try {
-      if (req.method !== 'POST') {
+      if (req.method !== 'GET') {
         return res.status(405).json({
           error: true,
           message: 'Wrong request method. Please try again.'
         });
       }
-      const { categoryId } = req.body;
+      const categoryId = req.params.categoryId;
       if (!categoryId) {
         return res.status(400).json({
           error: true,
@@ -193,6 +193,26 @@ class CustomerController {
       const products = await customerService.all_products(sanitized_categoryId);
       res.json(products);
     } catch (error) {
+      console.error('❌ All products error:', error);
+      res.status(500).json({
+        error: true,
+        message: 'An error occurred while fetching all products. Please try again.'
+      });
+    }
+  }
+
+  async get_all_products(req, res) {
+    try {
+      if (req.method !== 'GET') {
+        return res.status(405).json({
+          error: true,
+          message: 'Wrong request method. Please try again.'
+        });
+      }
+      const products = await customerService.get_all_products();
+      res.json(products);
+    }
+    catch (error) {
       console.error('❌ All products error:', error);
       res.status(500).json({
         error: true,

@@ -12,7 +12,8 @@ router.post('/cart/decrease-quantity', authenticateUser, customerController.decr
 
 // Product routes (public for browsing, protected for purchase)
 router.get('/categories', customerController.getAllCategories);
-router.post('/products', customerController.getAllProducts);
+router.get('/products', customerController.get_all_products);
+router.get('/catproducts/:categoryId', customerController.getAllProducts);
 
 // Payment routes (protected)
 router.post('/payment/process', authenticateUser, customerController.processMMPayment);

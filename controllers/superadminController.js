@@ -121,7 +121,7 @@ class SuperadminController {
         });
       }
 
-      const { productName, description, catid, category_id, price, stock } = req.body;
+      const { productName, description, catid, price, stock } = req.body;
       // Convert absolute path to relative path for database storage
       let productPhoto = null;
       if (req.file) {
@@ -131,10 +131,7 @@ class SuperadminController {
         productPhoto = relativePath.replace(/\\/g, '/'); // Normalize path separators for cross-platform
       }
 
-      // Use category_id if provided, otherwise use catid
-      const finalCategoryId = category_id || catid;
-
-      if (!productName || !finalCategoryId || price === undefined) {
+      if (!productName || !catid || price === undefined) {
         // If file was uploaded but validation failed, delete it
         if (req.file) {
           const fs = require('fs');
@@ -152,8 +149,7 @@ class SuperadminController {
 
       const sanitized_productName = sanitizeInput(productName);
       const sanitized_description = description ? sanitizeInput(description) : null;
-      const sanitized_catid = sanitizeInput(finalCategoryId);
-      const sanitized_category_id = category_id ? sanitizeInput(category_id) : null;
+      const sanitized_catid = sanitizeInput(catid);
       const sanitized_price = parseInt(price);
       const sanitized_stock = stock ? parseInt(stock) : 0;
 
@@ -163,8 +159,7 @@ class SuperadminController {
         productPhoto,
         sanitized_catid,
         sanitized_price,
-        sanitized_stock,
-        sanitized_category_id
+        sanitized_stock
       );
       res.json(response);
     } catch (error) {
@@ -194,7 +189,7 @@ class SuperadminController {
         });
       }
       const productid = req.params.productid;
-      const { productName, description, catid, category_id, price, stock } = req.body;
+      const { productName, description, catid, price, stock } = req.body;
       // Convert absolute path to relative path for database storage
       let productPhoto = null;
       if (req.file) {
@@ -203,9 +198,6 @@ class SuperadminController {
         const relativePath = path.relative(path.join(__dirname, '..'), req.file.path);
         productPhoto = relativePath.replace(/\\/g, '/'); // Normalize path separators for cross-platform
       }
-
-      // Use category_id if provided, otherwise use catid
-      const finalCategoryId = category_id || catid;
 
       if (!productid) {
         // If file was uploaded but validation failed, delete it
@@ -226,8 +218,7 @@ class SuperadminController {
       const sanitized_productid = sanitizeInput(productid);
       const sanitized_productName = productName ? sanitizeInput(productName) : null;
       const sanitized_description = description !== undefined ? sanitizeInput(description) : undefined;
-      const sanitized_catid = finalCategoryId ? sanitizeInput(finalCategoryId) : null;
-      const sanitized_category_id = category_id ? sanitizeInput(category_id) : null;
+      const sanitized_catid = catid ? sanitizeInput(catid) : null;
       const sanitized_price = price !== undefined ? parseInt(price) : undefined;
       const sanitized_stock = stock !== undefined ? parseInt(stock) : undefined;
 
@@ -238,8 +229,7 @@ class SuperadminController {
         productPhoto, // null if no new image, or file path if new image uploaded
         sanitized_catid,
         sanitized_price,
-        sanitized_stock,
-        sanitized_category_id
+        sanitized_stock
       );
       res.json(response);
     } catch (error) {

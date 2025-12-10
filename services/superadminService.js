@@ -101,9 +101,9 @@ class SuperadminService {
       throw new Error('Failed to fetch categories' + error.message);
     }
   }
- 
+
   // Add product with image upload
-  async addProduct(ProductName, Description, ProductPhoto, catid, Price, Stock, category_id) {
+  async addProduct(ProductName, Description, ProductPhoto, catid, Price, Stock) {
     try {
       // ProductPhoto should be the file path from multer (e.g., 'uploads/products/product_1234567890_filename.jpg')
       // or null if no image was uploaded
@@ -113,18 +113,23 @@ class SuperadminService {
         // Multer saves to uploads/products/ and we store the relative path
         photoPath = ProductPhoto;
       }
-
-      // Use category_id if provided, otherwise use catid
-      const finalCategoryId = category_id || catid;
+      const existingProduct = await Product.findOne({
+        where: { ProductName: ProductName }
+      });
+      if (existingProduct) {
+        return {
+          error: true,
+          message: 'Product already exists.',
+        };
+      }
 
       await Product.create({
         ProductName: ProductName,
         Description: Description || null,
         ProductPhoto: photoPath,
-        catid: finalCategoryId,
+        catid: catid,
         Price: Price,
-        Stock: Stock || 0,
-        category_id: finalCategoryId
+        Stock: Stock || 0
       });
 
       return {
@@ -138,7 +143,7 @@ class SuperadminService {
   }
 
   // Update product
-  async updateProduct(productid, ProductName, Description, ProductPhoto, catid, Price, Stock, category_id) {
+  async updateProduct(productid, ProductName, Description, ProductPhoto, catid, Price, Stock) {
     try {
       const product = await Product.findByPk(productid);
       if (!product) {
@@ -166,16 +171,10 @@ class SuperadminService {
         product.ProductPhoto = ProductPhoto;
       }
 
-      // Determine which category ID to use
-      const finalCategoryId = category_id || catid;
-
       // Update product fields
       if (ProductName) product.ProductName = ProductName;
       if (Description !== undefined) product.Description = Description;
-      if (finalCategoryId) {
-        product.catid = finalCategoryId;
-        product.category_id = finalCategoryId;
-      }
+      if (catid) product.catid = catid;
       if (Price !== undefined) product.Price = Price;
       if (Stock !== undefined) product.Stock = Stock;
 
@@ -226,13 +225,7 @@ class SuperadminService {
   async getAllProducts() {
     try {
       const products = await Product.findAll({
-        attributes: ['productid', 'ProductName', 'Description', 'ProductPhoto', 'catid', 'Price', 'Stock', 'category_id'],
-        include: [{
-          model: Categories,
-          as: 'category',
-          attributes: ['catid', 'catName'],
-          required: false
-        }],
+        attributes: ['productid', 'ProductName', 'Description', 'ProductPhoto', 'Price', 'Stock'],
         order: [['ProductName', 'ASC']]
       });
       return {
@@ -292,11 +285,19 @@ class SuperadminService {
         }],
         order: [['dateadded', 'DESC']]
       });
-      return {
-        success: true,
-        message: 'Orders fetched successfully.',
-        data: orders
-      };
+      if (orders.length === 0) {
+        return {
+          error: true,
+          message: 'No orders found.',
+        };
+      }
+      else{
+        return {
+          success: true,
+          message: 'Orders fetched successfully.',
+          data: orders
+        };
+      }
     } catch (error) {
       console.error('Error in getAllOrders service:', error);
       throw new Error('Failed to fetch orders' + error.message);
