@@ -9,6 +9,7 @@ const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const routes = require('./routes');
 const sequelize = require('./config/db');
 
+
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
