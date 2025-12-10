@@ -5,7 +5,7 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 // Import middleware and routes
-const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const { errorHandler, notFoundHandler } = require('./middleware/errorhandler');
 const routes = require('./routes');
 const sequelize = require('./config/db');
 
