@@ -15,23 +15,60 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to Digital Ocean via SSH (Password)
+      - name: Deploy to Digital Ocean
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USERNAME }}
           password: ${{ secrets.DO_PASSWORD }}
           port: ${{ secrets.DO_PORT || 22 }}
-          script_timeout: 10m
+          timeout: 15m
           script: |
             # Navigate to application directory
             cd ${{ secrets.DO_APP_PATH }}
             echo "📂 Current directory: $(pwd)"
+            echo "📁 Files in directory:"
+            ls -la
+            
+            # Check if this is a Git repository
+            if [ ! -d .git ]; then
+              echo "🚀 Setting up Git repository..."
+              git init
+              git remote add origin https://github.com/kaytee124/Nouella.git || git remote set-url origin https://github.com/kaytee124/Nouella.git
+            fi
             
             # Pull latest code
             echo "📥 Pulling latest code..."
-            git config --global --add safe.directory /var/www/nouella
+            git fetch --all
+            git reset --hard origin/main 2>/dev/null || git reset --hard origin/master 2>/dev/null
             git pull origin main 2>/dev/null || git pull origin master 2>/dev/null
+            
+            # Ensure .env file exists
+            if [ ! -f .env ]; then
+              echo "⚠️  Creating .env template..."
+              cat > .env << 'EOF'
+            NODE_ENV=production
+            PORT=3000
+            DB_HOST=host.docker.internal
+            DB_PORT=3306
+            DB_NAME=nouella
+            DB_USER=nouella_user
+            DB_PASSWORD=REPLACE_WITH_REAL_MYSQL_PASSWORD
+            JWT_SECRET=REPLACE_WITH_REAL_JWT_SECRET
+            RATE_LIMIT_WINDOW_MS=900000
+            RATE_LIMIT_MAX_REQUESTS=100
+            EOF
+              echo "⚠️  IMPORTANT: Update .env file with real credentials!"
+            else
+              echo "✅ .env file exists (preserving existing credentials)"
+              # Make sure it has required variables
+              if ! grep -q "DB_PASSWORD" .env; then
+                echo "DB_PASSWORD=REPLACE_WITH_REAL_MYSQL_PASSWORD" >> .env
+              fi
+              if ! grep -q "JWT_SECRET" .env; then
+                echo "JWT_SECRET=REPLACE_WITH_REAL_JWT_SECRET" >> .env
+              fi
+            fi
             
             # Stop existing container
             echo "🛑 Stopping existing container..."
@@ -48,28 +85,28 @@ jobs:
             echo "🏥 Checking application health..."
             sleep 30
             
-            for i in {1..12}; do
+            for i in {1..15}; do
               if curl -s -f http://localhost:3000/health > /dev/null; then
                 echo "✅ Health check passed!"
                 break
-              elif [ $i -eq 12 ]; then
-                echo "❌ Health check failed after 12 attempts"
+              elif [ $i -eq 15 ]; then
+                echo "❌ Health check failed after 15 attempts"
                 echo "📋 Container logs:"
                 docker-compose -f docker-compose.prod.yml logs app --tail=100
+                echo "📋 Checking Docker containers:"
+                docker ps -a
                 exit 1
               else
-                echo "⏳ Attempt $i/12 - Waiting..."
+                echo "⏳ Attempt $i/15 - Waiting..."
                 sleep 10
               fi
             done
             
-            # Cleanup old images (keep only latest)
-            echo "🧹 Cleaning up unused Docker resources..."
+            # Cleanup
+            echo "🧹 Cleaning up old Docker images..."
             docker image prune -f
             
             echo "🎉 Deployment completed successfully!"
-            
-            # Show final status
             echo "📊 Container status:"
             docker-compose -f docker-compose.prod.yml ps
 
